@@ -1,3 +1,6 @@
+> [!IMPORTANT]
+> This is a fork of the official BeeAI Framework developed by IBM, maintained by Aaron Teo for IBM Z & LinuxONE (s390x) support.
+> Note: This repository does not contain DuckDuckGo search as it depends on `primp` and `boringssl`, which have been removed to allow support for s390x. If you require DuckDuckGo search tool, please use the official repository [found here](https://github.com/i-am-bee/beeai-framework)
 
 <h1 align="left">BeeAI Framework </h1>
 
