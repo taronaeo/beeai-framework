@@ -1,3 +1,7 @@
+> [!IMPORTANT]
+> This is a fork of the official BeeAI Framework developed by IBM, maintained by Aaron Teo for IBM Z & LinuxONE (s390x) support.
+> Note: This repository does not contain DuckDuckGo search as it depends on `primp` and `boringssl`, which have been removed to allow support for s390x. If you require DuckDuckGo search tool, please use the official repository [found here](https://github.com/i-am-bee/beeai-framework)
+
 <div align="center">
 
 <h1>BeeAI Framework</h1>
@@ -11,20 +15,18 @@
 [![Join our Discord](https://img.shields.io/badge/Join%20our%20Discord-7289DA?style=plastic&logo=discord&logoColor=white)](https://discord.com/invite/NradeA6ZNF)
 [![LF AI & Data](https://img.shields.io/badge/LF%20AI%20%26%20Data-0072C6?style=plastic&logo=linuxfoundation&logoColor=white)](https://lfaidata.foundation/projects/)
 
-
 </div>
 
 ## Latest updates
 
-| Date       | Language      | Update Description                                                                 
-|------------|---------------|-------------------------------------------------------------------------------------|
-| 2025/02/19 | Python        | Launched Python library alpha. See [getting started guide](#installation).               |
-| 2025/02/07 | TypeScript    | Introduced [Backend](/typescript/docs/backend.md) module to simplify working with AI services (chat, embedding). See [migration guide](/typescript/docs/migration_guide.md). |
-| 2025/01/28 | TypeScript    | Added support for DeepSeek R1, check out the [Competitive Analysis Workflow example](/typescript/examples/workflows/competitive-analysis). |
-| 2025/01/09 | TypeScript    | Introduced [Workflows](/typescript/docs/workflows.md), a way of building multi-agent systems. Added support for [Model Context Protocol](/typescript/docs/tools.md#using-the-mcptool-class). |
-| 2024/12/09 | TypeScript    | Added support for LLaMa 3.3. See [multi-agent workflow example using watsonx](/typescript/examples/workflows/multiAgents.ts) or explore [other available providers](/typescript/docs/backend.md#providers-implementations).        |
-| 2024/11/21 | TypeScript    | Added an experimental [Streamlit agent](/typescript/examples/agents/experimental/streamlit.ts). |
-
+| Date       | Language   | Update Description                                                                                                                                                                                                          |
+| ---------- | ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 2025/02/19 | Python     | Launched Python library alpha. See [getting started guide](#installation).                                                                                                                                                  |
+| 2025/02/07 | TypeScript | Introduced [Backend](/typescript/docs/backend.md) module to simplify working with AI services (chat, embedding). See [migration guide](/typescript/docs/migration_guide.md).                                                |
+| 2025/01/28 | TypeScript | Added support for DeepSeek R1, check out the [Competitive Analysis Workflow example](/typescript/examples/workflows/competitive-analysis).                                                                                  |
+| 2025/01/09 | TypeScript | Introduced [Workflows](/typescript/docs/workflows.md), a way of building multi-agent systems. Added support for [Model Context Protocol](/typescript/docs/tools.md#using-the-mcptool-class).                                |
+| 2024/12/09 | TypeScript | Added support for LLaMa 3.3. See [multi-agent workflow example using watsonx](/typescript/examples/workflows/multiAgents.ts) or explore [other available providers](/typescript/docs/backend.md#providers-implementations). |
+| 2024/11/21 | TypeScript | Added an experimental [Streamlit agent](/typescript/examples/agents/experimental/streamlit.ts).                                                                                                                             |
 
 For a full changelog, see our [releases page](https://github.com/i-am-bee/beeai-framework/releases).
 
@@ -32,7 +34,7 @@ For a full changelog, see our [releases page](https://github.com/i-am-bee/beeai-
 
 ## Why BeeAI?
 
-**🏆 Build for your use case.**  Implement simple to complex multi-agent patterns using [Workflows](/python/docs/workflows.md), start with a [ReActAgent](/python/examples/agents/react.py), or easily [build your own agent architecture](/python/docs/agents.md#creating-your-own-agent). There is no one-size-fits-all agent architecture, you need full flexibility in orchestrating agents and defining their roles and behaviors. 
+**🏆 Build for your use case.** Implement simple to complex multi-agent patterns using [Workflows](/python/docs/workflows.md), start with a [ReActAgent](/python/examples/agents/react.py), or easily [build your own agent architecture](/python/docs/agents.md#creating-your-own-agent). There is no one-size-fits-all agent architecture, you need full flexibility in orchestrating agents and defining their roles and behaviors.
 
 **🔌 Seamlessly integrate with your models and tools.** Get started with any model from [Ollama](/python/examples/backend/providers/ollama.py), [Groq](/python/examples/backend/providers/groq.py), [OpenAI](/python/examples/backend/providers/openai_example.py), [watsonx.ai](/python/examples/backend/providers/watsonx.py), and [more](/python/docs/backend.md#supported-providers). Leverage tools from [LangChain](/python/examples/tools/langchain.py), connect to any server using the [Model Context Protocol](/python/docs/tools.md#mcp-tool), or build your own [custom tools](/python/docs/tools.md#creating-custom-tools). BeeAI is designed to integrate with the systems and capabilities you need.
 
@@ -46,11 +48,13 @@ For a full changelog, see our [releases page](https://github.com/i-am-bee/beeai-
 ## Installation
 
 To install the Python library:
+
 ```shell
 pip install beeai-framework
 ```
 
 To install the TypeScript library:
+
 ```shell
 npm install beeai-framework
 ```
@@ -166,6 +170,7 @@ To stay up-to-date on our [public roadmap](https://github.com/orgs/i-am-bee/proj
 BeeAI framework is open-source and we ❤️ contributions.<br>
 
 To help build BeeAI, take a look at our:
+
 - [Python contribution guidelines](/python/CONTRIBUTING.md)
 - [TypeScript contribution guidelines](/typescript/CONTRIBUTING.md)
 
