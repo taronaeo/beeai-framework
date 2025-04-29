@@ -1,3 +1,11 @@
+## python_v0.1.19 (2025-04-29)
+
+### Features
+
+- **agent**: migrate to newer ACP SDK in RemoteAgent (#794)
+- **backend**: Add EmbeddingModel (#787)
+- **backend**: add the ability to change the strictness of a tool input and response format schema (#795)
+
 ## python_v0.1.18 (2025-04-23)
 
 ### Bug Fixes
