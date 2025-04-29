@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.1.13](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.12...typescript_v0.1.13) (2025-04-29)
+
+### Features
+
+- **agents:** rewrite RemoveAgent to ACP ([#801](https://github.com/i-am-bee/beeai-framework/issues/801)) ([0c41b6c](https://github.com/i-am-bee/beeai-framework/commit/0c41b6cc6eb2a585cc1eb363536ace6357ec417d))
+- **internals:** update RestfulClient capabilities ([#802](https://github.com/i-am-bee/beeai-framework/issues/802)) ([f00ae97](https://github.com/i-am-bee/beeai-framework/commit/f00ae9737aa61ed54504e5195f3bbdcd27c30255))
+
+### Bug Fixes
+
+- **internals:** prevent double slashes in RestfulClient ([fd5a0c8](https://github.com/i-am-bee/beeai-framework/commit/fd5a0c8386673e6f7b91a46b463f693e6667f139))
+
 ## [0.1.12](https://github.com/i-am-bee/beeai-framework/compare/typescript_v0.1.11...typescript_v0.1.12) (2025-04-23)
 
 ### Bug Fixes
