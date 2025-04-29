@@ -18,31 +18,29 @@ import { Callback } from "@/emitter/types.js";
 import { Emitter } from "@/emitter/emitter.js";
 import { AgentError, BaseAgent, BaseAgentRunOptions } from "@/agents/base.js";
 import { GetRunContext } from "@/context.js";
-import { AssistantMessage, Message } from "@/backend/message.js";
+import { AssistantMessage, Message, UserMessage } from "@/backend/message.js";
 import { BaseMemory } from "@/memory/base.js";
-import { Client as MCPClient } from "@i-am-bee/acp-sdk/client/index.js";
-import { Transport } from "@i-am-bee/acp-sdk/shared/transport.js";
 import { shallowCopy } from "@/serializer/utils.js";
-import { NotImplementedError } from "@/errors.js";
-import { AgentRunProgressNotificationSchema } from "@i-am-bee/acp-sdk/types.js";
-import { SSEClientTransport } from "@i-am-bee/acp-sdk/client/sse.js";
+import { RestfulClient } from "@/internals/fetcher.js";
 
 export interface RemoteAgentRunInput {
-  prompt: Record<string, unknown> | string;
+  input: Message | string | Message[] | string[];
 }
 
 export interface RemoteAgentRunOutput {
-  message: Message;
+  result: Message;
+  event: Record<string, any>;
 }
 
 export interface RemoteAgentEvents {
-  update: Callback<{ output: string }>;
+  update: Callback<{ key: string; value: any }>;
+  error: Callback<{ message: string }>;
 }
 
 interface Input {
-  client: MCPClient;
-  transport: Transport;
+  url: string;
   agentName: string;
+  memory: BaseMemory;
 }
 
 export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOutput> {
@@ -50,9 +48,19 @@ export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOu
     namespace: ["agent", "remote"],
     creator: this,
   });
+  protected client: RestfulClient<{ runs: string; agents: string }>;
 
   constructor(protected readonly input: Input) {
     super();
+    this.client = new RestfulClient({
+      baseUrl: this.input.url,
+      headers: async () =>
+        new Headers({
+          "Accept": "application/json",
+          "Content-Type": "application/json",
+        }),
+      paths: { runs: `/runs`, agents: `/agents` },
+    });
   }
 
   protected async _run(
@@ -60,75 +68,80 @@ export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOu
     _options: BaseAgentRunOptions,
     context: GetRunContext<this>,
   ): Promise<RemoteAgentRunOutput> {
-    const runner = this.createRunner(context);
+    const inputs = Array.isArray(input.input)
+      ? input.input.map(this.convertToACPMessage)
+      : [this.convertToACPMessage(input.input)];
 
-    const output = await runner(input);
+    const generator = this.client.stream("runs", {
+      body: JSON.stringify({
+        agent_name: this.input.agentName,
+        input: inputs,
+        mode: "stream",
+      }),
+      signal: context.signal,
+    });
 
-    const message: Message = new AssistantMessage(output);
-
-    return { message };
-  }
-
-  protected async listAgents() {
-    const response = await this.input.client.listAgents();
-
-    return response.agents;
-  }
-
-  protected createRunner(context: GetRunContext<this>) {
-    return async (input: RemoteAgentRunInput): Promise<string> => {
+    let eventData: any = null;
+    for await (const event of generator) {
       try {
-        this.input.client.setNotificationHandler(
-          AgentRunProgressNotificationSchema,
-          async (notification) => {
-            await context.emitter.emit("update", {
-              output: JSON.stringify(notification.params.delta, null, 2),
-            });
-          },
-        );
-        if (!this.input.client.transport) {
-          await this.input.client.connect(this.input.transport);
-        }
-      } catch (e) {
-        throw new AgentError(`Can't connect to Beeai Platform.`, [e], { isFatal: true });
+        eventData = JSON.parse(event.data);
+        await context.emitter.emit("update", {
+          key: eventData.type,
+          value: { ...eventData, type: undefined },
+        });
+      } catch {
+        await context.emitter.emit("error", {
+          message: "Error parsing JSON",
+        });
       }
+    }
 
-      const agents = await this.listAgents();
-      const agent = agents.find((agent) => agent.name === this.input.agentName);
-      if (!agent) {
-        throw new AgentError(
-          `Agent ${this.input.agentName} is not registered in the platform`,
-          [],
-          {
-            isFatal: true,
-          },
-        );
-      }
+    if (!eventData) {
+      throw new AgentError("No event received from agent.");
+    }
 
-      const response = await this.input.client.runAgent(
-        {
-          name: this.input.agentName,
-          input: typeof input.prompt === "string" ? { text: input.prompt } : input.prompt,
-        },
-        {
-          timeout: 10_000_000,
-          signal: context.signal,
-          onprogress: () => null, // This has to be here in order for notifications to work.
-        },
+    if (eventData.type === "run.failed") {
+      const message =
+        eventData.run?.error?.message || "Something went wrong with the agent communication.";
+      await context.emitter.emit("error", { message });
+      throw new AgentError(message);
+    } else if (eventData.type === "run.completed") {
+      const text = eventData.run.output.reduce(
+        (acc: string, output: any) =>
+          acc + output.parts.reduce((acc2: string, part: any) => acc2 + part.content, ""),
+        "",
       );
+      const assistantMessage: Message = new AssistantMessage(text, { event: eventData });
+      const inputMessages = Array.isArray(input.input)
+        ? input.input.map(this.convertToMessage)
+        : [this.convertToMessage(input.input)];
 
-      const output = JSON.stringify(response.output, null, 2);
-      await context.emitter.emit("update", { output });
-      return output;
-    };
+      await this.memory.addMany(inputMessages);
+      await this.memory.add(assistantMessage);
+
+      return { result: assistantMessage, event: eventData };
+    } else {
+      return { result: new AssistantMessage("No response from agent."), event: eventData };
+    }
+  }
+
+  async checkAgentExists() {
+    try {
+      const response = await this.client.fetch("agents");
+      return !!response.agents.find((agent: any) => agent.name === this.input.agentName);
+    } catch (error) {
+      throw new AgentError(`Error while checking agent existence: ${error.message}`, [], {
+        isFatal: true,
+      });
+    }
   }
 
   get memory() {
-    throw new NotImplementedError();
+    return this.input.memory;
   }
 
   set memory(memory: BaseMemory) {
-    throw new NotImplementedError();
+    this.input.memory = memory;
   }
 
   createSnapshot() {
@@ -139,14 +152,23 @@ export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOu
     };
   }
 
-  static createSSEAgent(url: string, agentName: string) {
-    return new RemoteAgent({
-      client: new MCPClient({
-        name: "remote-agent",
-        version: "1.0.0",
-      }),
-      transport: new SSEClientTransport(new URL(url)),
-      agentName: agentName,
-    });
+  protected convertToACPMessage(input: string | Message): any {
+    if (typeof input === "string") {
+      return { parts: [{ content: input, role: "user" }] };
+    } else if (input instanceof Message) {
+      return { parts: [{ content: input.content, role: input.role }] };
+    } else {
+      throw new AgentError("Unsupported input type");
+    }
+  }
+
+  protected convertToMessage(input: string | Message): any {
+    if (typeof input === "string") {
+      return new UserMessage(input);
+    } else if (input instanceof Message) {
+      return input;
+    } else {
+      throw new AgentError("Unsupported input type");
+    }
   }
 }
