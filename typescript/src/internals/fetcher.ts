@@ -87,7 +87,7 @@ export class RestfulClient<K extends Record<string, string>> extends Serializabl
   constructor(
     protected input: {
       baseUrl: string;
-      headers?: () => Promise<Headers>;
+      headers?: () => Promise<HeadersInit>;
       paths: K;
     },
   ) {
@@ -212,9 +212,13 @@ export class RestfulClient<K extends Record<string, string>> extends Serializabl
   }
 
   protected getUrl(path: keyof K): URL {
-    const { paths, baseUrl } = this.input;
-    const url = new URL(baseUrl);
-    url.pathname += paths[path] ?? path;
+    const url = new URL(this.input.baseUrl);
+    const extraPath = this.input.paths[path] ?? path;
+    if (url.pathname.endsWith("/")) {
+      url.pathname += extraPath.replace(/^\//, "");
+    } else {
+      url.pathname += extraPath;
+    }
     return url;
   }
 

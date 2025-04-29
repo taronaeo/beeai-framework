@@ -54,11 +54,10 @@ export class RemoteAgent extends BaseAgent<RemoteAgentRunInput, RemoteAgentRunOu
     super();
     this.client = new RestfulClient({
       baseUrl: this.input.url,
-      headers: async () =>
-        new Headers({
-          "Accept": "application/json",
-          "Content-Type": "application/json",
-        }),
+      headers: async () => ({
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+      }),
       paths: { runs: `/runs`, agents: `/agents` },
     });
   }
