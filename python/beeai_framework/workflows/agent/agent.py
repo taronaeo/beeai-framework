@@ -56,6 +56,7 @@ class AgentWorkflowInput(BaseModel):
 
 class Schema(BaseModel):
     inputs: list[InstanceOf[AgentWorkflowInput]]
+    current_input: InstanceOf[AgentWorkflowInput] | None = None
     final_answer: str | None = None
     new_messages: list[InstanceOf[AnyMessage]] = []
 
@@ -135,6 +136,7 @@ class AgentWorkflow:
             await memory.add_many(state.new_messages)
 
             run_input = state.inputs.pop(0).model_copy() if state.inputs else AgentWorkflowInput()
+            state.current_input = run_input
             agent = await create_agent(memory.as_read_only())
             run_output: ToolCallingAgentRunOutput = await agent.run(**run_input.model_dump(), execution=execution)
 
