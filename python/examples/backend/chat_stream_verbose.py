@@ -3,7 +3,13 @@ import sys
 import traceback
 
 from beeai_framework.adapters.ollama import OllamaChatModel
-from beeai_framework.backend import ChatModelNewTokenEvent, ChatModelStartEvent, ChatModelSuccessEvent, UserMessage
+from beeai_framework.backend import (
+    ChatModelErrorEvent,
+    ChatModelNewTokenEvent,
+    ChatModelStartEvent,
+    ChatModelSuccessEvent,
+    UserMessage,
+)
 from beeai_framework.emitter import EventMeta
 from beeai_framework.errors import FrameworkError
 from examples.helpers.io import ConsoleReader
@@ -20,6 +26,9 @@ async def main() -> None:
         def on_start(data: ChatModelStartEvent, meta: EventMeta) -> None:
             reader.write("LLM 🤖 (start)", str(data.input.model_dump()))
 
+        def on_error(data: ChatModelErrorEvent, meta: EventMeta) -> None:
+            reader.write("LLM 🤖 (error)", str(data.error.explain()))
+
         def on_new_token(data: ChatModelNewTokenEvent, meta: EventMeta) -> None:
             reader.write("LLM 🤖 (new_token)", data.value.get_text_content())
 
@@ -31,6 +40,7 @@ async def main() -> None:
         response = (
             await llm.create(messages=[UserMessage(prompt)], stream=True)
             .on("start", on_start)
+            .on("error", on_error)
             .on("success", on_success)
             .on("new_token", on_new_token)
         )
